@@ -16,9 +16,10 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 #define SSPIN 53
 MFRC522 rc(SSPIN, RSTPIN);
 
-const byte ROWS = 4;
+const byte ROWS = 4; //Rows and column of keyPad
 const byte COLS = 4;
-const int chipSelect = 43;
+
+const int chipSelect = 43; //SD card adapter Pin
 
 int readsuccess, x = 0, mode = 1;
 int fingerPrintMode = 0;
@@ -30,7 +31,6 @@ int relayState = LOW;
 int buttonState;
 int buzzerPin = 44;
 int id;
-int fingerID;
 String sFingerID = "";
 int fingerPrintX = 0;
 
@@ -167,7 +167,7 @@ void keypadEvent(KeypadEvent key)
 
                         while (!getFingerprintEnroll())
                             ;
-
+                        
                         fingerPrintMode = 0;
                         fingerPrintX = 10;
                         sFingerID = "";
@@ -183,19 +183,14 @@ void keypadEvent(KeypadEvent key)
                         fingerPrintX = 10;
                         sFingerID = "";
                     }
-
                     break;
-
                 default:
                     break;
                 }
-
                 break;
-
             default:
                 break;
             }
-
             keypad.getKey();
             delay(100);
         }
@@ -211,16 +206,13 @@ void keypadEvent(KeypadEvent key)
             lcd.setCursor(0, 1);
             lcd.print("Press * to Enter");
             keypad.getKey();
-
             break;
-
         default:
             break;
         }
     }
     while (x >= 1 && x <= 6)
     {
-
         if (!digitalRead(buttonPin))
         {
             delay(190);
@@ -248,14 +240,12 @@ void keypadEvent(KeypadEvent key)
 
             switch (key)
             {
-            case '*':
+            case '*': //Submit and check the password
                 Serial.println(pwEnter);
                 checkPassword();
                 x = 0;
                 break;
-
             default:
-
                 break;
             }
 
@@ -294,7 +284,6 @@ void checkPassword()
         nameEnter = "Private PW";
         writeSD(nameEnter);
     }
-
     else
     {
         lcdDenied();
@@ -311,7 +300,6 @@ void checkPassword()
 void rfidMode()
 {
     readsuccess = getid();
-
     if (readsuccess == 1)
     {
         int match = 0;
@@ -687,9 +675,7 @@ uint8_t getFingerprintEnroll()
             break;
         }
     }
-
     // OK success!
-
     p = finger.image2Tz(2);
     switch (p)
     {
