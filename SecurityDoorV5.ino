@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_PCF8574.h>
 #include "RTClib.h"
+#include "Display.h"
 
 LiquidCrystal_PCF8574 lcd(0x27);
 
@@ -16,10 +17,9 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 #define SSPIN 53
 MFRC522 rc(SSPIN, RSTPIN);
 
-const byte ROWS = 4; //Rows and column of keyPad
+const byte ROWS = 4;
 const byte COLS = 4;
-
-const int chipSelect = 43; //SD card adapter Pin
+const int chipSelect = 43;
 
 int readsuccess, x = 0, mode = 1;
 int fingerPrintMode = 0;
@@ -31,6 +31,7 @@ int relayState = LOW;
 int buttonState;
 int buzzerPin = 44;
 int id;
+int fingerID;
 String sFingerID = "";
 int fingerPrintX = 0;
 
@@ -50,6 +51,7 @@ byte rowPins[ROWS] = {5, 4, 3, 2};
 byte colPins[COLS] = {9, 8, 7, 6};
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+Display display = Display(48, 46, 45, 47, 44);
 
 byte defcard[][4] = {{0xBB, 0xA7, 0x2E, 0x01}, {0x96, 0x68, 0x47, 0xF4}, {0xD6, 0xBA, 0x45, 0xF4}}; //for multiple cards
 int N = 3;                                                                                          //change this to the number of cards/tags you will use
@@ -108,6 +110,7 @@ void setup()
 
 void loop()
 {
+    display.lcdStart();
     char printKey = keypad.getKey();
     rfidMode();
     getFingerprintID();
@@ -167,7 +170,7 @@ void keypadEvent(KeypadEvent key)
 
                         while (!getFingerprintEnroll())
                             ;
-                        
+
                         fingerPrintMode = 0;
                         fingerPrintX = 10;
                         sFingerID = "";
@@ -183,14 +186,19 @@ void keypadEvent(KeypadEvent key)
                         fingerPrintX = 10;
                         sFingerID = "";
                     }
+
                     break;
+
                 default:
                     break;
                 }
+
                 break;
+
             default:
                 break;
             }
+
             keypad.getKey();
             delay(100);
         }
@@ -206,13 +214,16 @@ void keypadEvent(KeypadEvent key)
             lcd.setCursor(0, 1);
             lcd.print("Press * to Enter");
             keypad.getKey();
+
             break;
+
         default:
             break;
         }
     }
     while (x >= 1 && x <= 6)
     {
+
         if (!digitalRead(buttonPin))
         {
             delay(190);
@@ -240,12 +251,14 @@ void keypadEvent(KeypadEvent key)
 
             switch (key)
             {
-            case '*': //Submit and check the password
+            case '*':
                 Serial.println(pwEnter);
                 checkPassword();
                 x = 0;
                 break;
+
             default:
+
                 break;
             }
 
@@ -284,6 +297,7 @@ void checkPassword()
         nameEnter = "Private PW";
         writeSD(nameEnter);
     }
+
     else
     {
         lcdDenied();
@@ -300,6 +314,7 @@ void checkPassword()
 void rfidMode()
 {
     readsuccess = getid();
+
     if (readsuccess == 1)
     {
         int match = 0;
@@ -675,7 +690,9 @@ uint8_t getFingerprintEnroll()
             break;
         }
     }
+
     // OK success!
+
     p = finger.image2Tz(2);
     switch (p)
     {
