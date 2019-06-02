@@ -5,7 +5,6 @@ LiquidCrystal_PCF8574 lcd(0x27);
 
 Display::Display(int relayPin, int ledPin, int redPin, int buzzerPin)
 {
-  
   pinMode(relayPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
   pinMode(redPin, OUTPUT);
@@ -47,14 +46,12 @@ void Display::open()
 
 void Display::lcdDenied()
 {
-  lcd.setBacklight(1);
   lcd.begin(16, 2);
   lcd.print("Access Denied");
 }
 
 void Display::lcdAuthorised()
 {
-  lcd.setBacklight(1);
   lcd.begin(16, 2);
   lcd.print("Access Granted");
 }
@@ -72,7 +69,6 @@ void Display::lcdStart()
 
 void Display::lcdPassword()
 {
-  lcd.setBacklight(1);
   lcd.begin(16, 2);
   lcd.print("Enter Password");
   lcd.setCursor(0, 1);
@@ -81,7 +77,6 @@ void Display::lcdPassword()
 
 void Display::printPassword(String pw)
 {
-  lcd.setBacklight(1);
   lcd.begin(16, 2);
   lcd.print("Enter Password");
   lcd.setCursor(0, 1);
@@ -90,7 +85,6 @@ void Display::printPassword(String pw)
 
 void Display::lcdFpAccess(int fingerID)
 {
-  lcd.setBacklight(1);
   switch (fingerID)
   {
   case 1:
@@ -129,7 +123,6 @@ void Display::lcdFpAccess(int fingerID)
 
 void Display::fpNewID(String sFingerID)
 {
-  lcd.setBacklight(1);
   lcd.begin(16, 2);
   lcd.print("Fingerprint ID");
   lcd.setCursor(0, 1);
@@ -145,9 +138,22 @@ void Display::lcdInvalidID()
   close();
 }
 
-void Display::lcdFpStored(){
-  lcd.setBacklight(1);
+void Display::lcdFpStored()
+{
   lcd.begin(16, 2);
-        lcd.print("FingerprintStored");
-        buzzer();
+  lcd.print("FingerprintStored");
+  buzzer();
+}
+
+void Display::placeFpAgain()
+{
+  lcd.begin(16, 2);
+  lcd.print("Place the same");
+  lcd.setCursor(0,1);
+  lcd.print("finger again");
+}
+
+void Display::removeFinger(){
+  lcd.begin(16, 2);
+  lcd.print("Remove Finger");
 }
