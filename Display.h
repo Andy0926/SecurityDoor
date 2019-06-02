@@ -5,7 +5,7 @@
 class Display
 {
   public:
-    Display(int relayPin, int buttonPin, int ledPin, int redPin,
+    Display(int relayPin, int ledPin, int redPin,
             int buzzerPin);
     void lcdStart();
     void lcdAuthorised();
@@ -13,6 +13,12 @@ class Display
     void open();
     void close();
     void buzzer();
+    void lcdPassword();
+    void printPassword(String pw);
+    void lcdFpAccess(int fingerID);
+    void fpNewID(String sFingerID);
+    void lcdInvalidID();
+    void lcdFpStored();
 
   private:
     int _relayPin;
