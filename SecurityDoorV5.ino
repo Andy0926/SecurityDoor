@@ -4,11 +4,8 @@
 #include <Keypad.h>
 #include <Adafruit_Fingerprint.h>
 #include <Wire.h>
-#include <LiquidCrystal_PCF8574.h>
 #include "RTClib.h"
 #include "Display.h"
-
-LiquidCrystal_PCF8574 lcd(0x27);
 
 RTC_DS3231 rtc;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
@@ -23,15 +20,9 @@ const int chipSelect = 43;
 
 int readsuccess, x = 0, mode = 1;
 int fingerPrintMode = 0;
-int relayPin = 48;
 int buttonPin = 46;
-int ledPin = 45;
-int redPin = 47;
-int relayState = LOW;
-int buttonState;
-int buzzerPin = 44;
+
 int id;
-int fingerID;
 String sFingerID = "";
 int fingerPrintX = 0;
 
@@ -51,7 +42,7 @@ byte rowPins[ROWS] = {5, 4, 3, 2};
 byte colPins[COLS] = {9, 8, 7, 6};
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
-Display display = Display(48, 46, 45, 47, 44);
+Display display = Display(48, 45, 47, 44);
 
 byte defcard[][4] = {{0xBB, 0xA7, 0x2E, 0x01}, {0x96, 0x68, 0x47, 0xF4}, {0xD6, 0xBA, 0x45, 0xF4}}; //for multiple cards
 int N = 3;                                                                                          //change this to the number of cards/tags you will use
@@ -62,12 +53,16 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 
 void setup()
 {
-    lcd.setBacklight(1);
+  
     Serial.begin(9600);
+    Serial.println("@@@@@@@@@@@@@@@@@@@@@1");
     SPI.begin();
     rc.PCD_Init();                //initialize the receiver
+    Serial.println("@@@@@@@@@@@@@@@@@@@@@2");
     rc.PCD_DumpVersionToSerial(); //show details of card reader module
 
+    Serial.println("@@@@@@@@@@@@@@@@@@@@@");
+    
     finger.begin(57600); //Initiate Fingerprint Scanner
 
     pinMode(relayPin, OUTPUT);
@@ -78,7 +73,7 @@ void setup()
 
     keypad.addEventListener(keypadEvent); //add an event listener for this keypad
 
-    lcdStart();
+    display.lcdStart();
     digitalWrite(redPin, HIGH);
     digitalWrite(relayPin, HIGH);
     digitalWrite(ledPin, LOW);
@@ -110,18 +105,16 @@ void setup()
 
 void loop()
 {
-    display.lcdStart();
     char printKey = keypad.getKey();
     rfidMode();
     getFingerprintID();
-
     if (!digitalRead(buttonPin))
     {
         delay(190);
-        open();
-        lcdAuthorised();
+        display.open();
+        display.lcdAuthorised();
         delay(3000);
-        close();
+        display.close();
         nameEnter = "Button Override";
         writeSD(nameEnter);
     }
@@ -144,11 +137,9 @@ void keypadEvent(KeypadEvent key)
             {
             case PRESSED:
                 fingerPrintX++;
-                lcd.begin(16, 2);
-                lcd.print("Fingerprint ID");
-                lcd.setCursor(0, 1);
                 sFingerID += key;
-                lcd.print(sFingerID);
+                display.fpNewID(sFingerID);
+
                 Serial.print("Key Entered: ");
                 Serial.println(key);
                 Serial.print("FingerprintX: ");
@@ -174,14 +165,11 @@ void keypadEvent(KeypadEvent key)
                         fingerPrintMode = 0;
                         fingerPrintX = 10;
                         sFingerID = "";
-                        close();
+                        display.close();
                     }
                     else
                     {
-                        lcd.begin(16, 2);
-                        lcd.print("Invalid ID");
-                        lcd.setCursor(0, 1);
-                        close();
+                        display.lcdInvalidID();
                         fingerPrintMode = 0;
                         fingerPrintX = 10;
                         sFingerID = "";
@@ -209,10 +197,7 @@ void keypadEvent(KeypadEvent key)
         {
         case PRESSED:
             x++;
-            lcd.begin(16, 2);
-            lcd.print("Enter Password");
-            lcd.setCursor(0, 1);
-            lcd.print("Press * to Enter");
+            display.lcdPassword();
             keypad.getKey();
 
             break;
@@ -227,10 +212,10 @@ void keypadEvent(KeypadEvent key)
         if (!digitalRead(buttonPin))
         {
             delay(190);
-            open();
-            lcdAuthorised();
+            display.open();
+            display.lcdAuthorised();
             delay(3000);
-            close();
+            display.close();
             x = 0;
             pw = "";
             nameEnter = "Button Override";
@@ -242,10 +227,7 @@ void keypadEvent(KeypadEvent key)
         case PRESSED:
             x++;
             pw += "*";
-            lcd.begin(16, 2);
-            lcd.print("Enter Password");
-            lcd.setCursor(0, 1);
-            lcd.print(pw);
+            display.printPassword(pw);
             Serial.println(key);
             pwEnter += key;
 
@@ -276,8 +258,8 @@ void keypadEvent(KeypadEvent key)
     {
         x = 0;
 
-        lcdDenied();
-        close();
+        display.lcdDenied();
+        display.close();
         delay(2000);
         pw = "";
         pwEnter = "";
@@ -288,10 +270,10 @@ void checkPassword()
 {
     if (pwEnter == password || pwEnter == password2)
     {
-        open();
-        lcdAuthorised();
+        display.open();
+        display.lcdAuthorised();
         delay(3000);
-        close();
+        display.close();
         pw = "";
         pwEnter = "";
         nameEnter = "Private PW";
@@ -300,14 +282,14 @@ void checkPassword()
 
     else
     {
-        lcdDenied();
-        buzzer();
+        display.lcdDenied();
+        display.buzzer();
         delay(2000);
         pw = "";
         pwEnter = "";
         nameEnter = "Wrong PW Entered";
         writeSD(nameEnter);
-        lcdStart();
+        display.lcdStart();
     }
 }
 
@@ -337,46 +319,45 @@ void rfidMode()
             {
                 Serial.println("This is a Kon10");
                 Serial.println("CARD AUTHORISED");
-                open();
-                lcdAuthorised();
+                display.open();
+                display.lcdAuthorised();
                 delay(3000);
                 Serial.println("Turn Off the Lock");
                 readsuccess = 0;
                 nameEnter = "KON10";
                 writeSD(nameEnter);
-                close();
+                display.close();
             }
             else if (cardID == 1)
             {
                 Serial.println("This is a Printcess");
                 Serial.println("CARD AUTHORISED");
-                open();
-                lcdAuthorised();
+                display.open();
+                display.lcdAuthorised();
                 delay(3000);
                 Serial.println("Turn Off the Lock");
                 readsuccess = 0;
                 nameEnter = "Printcess";
                 writeSD(nameEnter);
-                close();
+                display.close();
             }
             else if (cardID == 2)
             {
                 Serial.println("This is a FingerprintCard");
                 fingerPrintMode = 1;
                 fingerPrintX = 0;
-                lcd.begin(16, 2);
-                lcd.print("Fingerprint ID");
+                display.fpNewID(sFingerID);
                 keypadEvent(fingerPrintMode);
             }
         }
         else //match ==0
         {
             Serial.println("CARD NOT Authorised");
-            lcdDenied();
-            buzzer();
+            display.lcdDenied();
+            display.buzzer();
             nameEnter = "Unauthorised CARD";
             writeSD(nameEnter);
-            close();
+            display.close();
             delay(2000);
         }
     }
@@ -471,101 +452,46 @@ uint8_t getFingerprintID()
     Serial.print(finger.fingerID);
     Serial.print(" with confidence of ");
     Serial.println(finger.confidence);
-
+    int fingerID = finger.fingerID;
     switch (finger.fingerID)
     {
     case 1:
-        lcd.begin(16, 2);
-        lcd.print("Welcome Andy");
+        display.lcdFpAccess(fingerID);
         nameEnter = "Andy";
         writeSD(nameEnter);
         break;
     case 2:
-        lcd.begin(16, 2);
-        lcd.print("Welcome ChiaLing");
+        display.lcdFpAccess(fingerID);
         nameEnter = "ChiaLing";
         writeSD(nameEnter);
         break;
     case 3:
-        lcd.begin(16, 2);
-        lcd.print("Welcome Boonie");
+        display.lcdFpAccess(fingerID);
         nameEnter = "Boonie";
         writeSD(nameEnter);
         break;
     case 4:
-        lcd.begin(16, 2);
-        lcd.print("Welcome Li En");
+        display.lcdFpAccess(fingerID);
         nameEnter = "Li En";
         writeSD(nameEnter);
         break;
     case 5:
-        lcd.begin(16, 2);
-        lcd.print("Welcome Kevin");
+        display.lcdFpAccess(fingerID);
         nameEnter = "Kevin";
         writeSD(nameEnter);
         break;
     case 6:
-        lcd.begin(16, 2);
-        lcd.print("Welcome Jeff");
+        display.lcdFpAccess(fingerID);
         nameEnter = "Jeff";
         writeSD(nameEnter);
         break;
     default:
         break;
     }
-    open();
+    display.open();
     delay(3000);
-    close();
+    display.close();
     return finger.fingerID;
-}
-
-void lcdStart()
-{
-    // set up the LCD's number of columns and rows:
-    lcd.begin(16, 2);
-    lcd.print("   Welcome to");
-    lcd.setCursor(0, 1);
-    //Print a message to second line of LCD
-    lcd.print("    Incubator");
-}
-
-void lcdAuthorised()
-{
-    lcd.begin(16, 2);
-    lcd.print("Access Granted");
-}
-
-void lcdDenied()
-{
-    lcd.begin(16, 2);
-    lcd.print("Access Denied");
-}
-
-void open()
-{
-    digitalWrite(relayPin, LOW);
-    digitalWrite(redPin, LOW);
-    digitalWrite(ledPin, HIGH);
-    buzzer();
-}
-void close()
-{
-    digitalWrite(redPin, HIGH);
-    digitalWrite(relayPin, HIGH);
-    digitalWrite(ledPin, LOW);
-    buzzer();
-    lcdStart();
-}
-
-void buzzer()
-{
-    digitalWrite(buzzerPin, HIGH);
-    delay(50);
-    digitalWrite(buzzerPin, LOW);
-    delay(50);
-    digitalWrite(buzzerPin, HIGH);
-    delay(50);
-    digitalWrite(buzzerPin, LOW);
 }
 
 void writeSD(String idName)
@@ -614,7 +540,7 @@ uint8_t getFingerprintEnroll()
             if (!digitalRead(buttonPin))
             {
                 delay(190);
-                close();
+                display.close();
                 nameEnter = "Quit Fingerprint Session";
                 writeSD(nameEnter);
                 return -1;
@@ -753,9 +679,7 @@ uint8_t getFingerprintEnroll()
         Serial.println(nameEnter);
 
         writeSD(nameEnter);
-        lcd.begin(16, 2);
-        lcd.print("FingerprintStored");
-        buzzer();
+        display.lcdFpStored();
         delay(2000);
         return -1;
     }
