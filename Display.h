@@ -19,6 +19,8 @@ class Display
     void fpNewID(String sFingerID);
     void lcdInvalidID();
     void lcdFpStored();
+    void placeFpAgain();
+    void removeFinger();
 
   private:
     int _relayPin;
