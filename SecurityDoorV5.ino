@@ -16,21 +16,28 @@ MFRC522 rc(SSPIN, RSTPIN);
 
 const byte ROWS = 4;
 const byte COLS = 4;
-const int chipSelect = 43;
+
+//define the SD Adapter Chip 
+const int chipSelect = 43; 
 
 int readsuccess, x = 0, mode = 1;
 int fingerPrintMode = 0;
 int buttonPin = 46;
 
-int id;
+//Use in Fingerprint
+//int id to compare the value
+//sFingerID to store the Id number to display on lcd
+int id; 
 String sFingerID = "";
+
+//Counter while enrolling the fingerprint
 int fingerPrintX = 0;
 
 String password = "56610*";
 String password2 = "1111*";
-String pw = "";
-String pwEnter = "";
-String nameEnter = "";
+String pw = ""; //to display***
+String pwEnter = ""; //to compare with the password and store in LOG
+String nameEnter = ""; //to display the name and store in LOG
 
 char keys[ROWS][COLS] = {
     {'1', '2', '3', 'A'},
@@ -42,18 +49,23 @@ byte rowPins[ROWS] = {5, 4, 3, 2};
 byte colPins[COLS] = {9, 8, 7, 6};
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
-Display display = Display(48, 45, 47, 44);
 
-byte defcard[][4] = {{0xBB, 0xA7, 0x2E, 0x01}, {0x96, 0x68, 0x47, 0xF4}, {0xD6, 0xBA, 0x45, 0xF4}}; //for multiple cards
-int N = 3;                                                                                          //change this to the number of cards/tags you will use
+//crete object for the Self define library int relayPin, int ledPin, int redPin, int buzzerPin
+Display display = Display(48, 45, 47, 44); 
+
+//for multiple cards
+//change this to the number of cards/tags you will use
+int N = 3;
+//Code of the RFID card 
+byte defcard[][4] = {{0xBB, 0xA7, 0x2E, 0x01}, {0x96, 0x68, 0x47, 0xF4}, {0xD6, 0xBA, 0x45, 0xF4}};
 byte readcard[4];
-
+//fingerprint uses pin 10 and 11
 SoftwareSerial mySerial(10, 11);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 
 void setup()
 {
-    //Serial.begin(9600);
+    Serial.begin(9600);
     SPI.begin();
     rc.PCD_Init(); //initialize the receiver
     rc.PCD_DumpVersionToSerial(); //show details of card reader module
